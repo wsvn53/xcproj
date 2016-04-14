@@ -62,7 +62,7 @@ Actions:
      Add a dependency target for target.
 
  * add-file-reference <source_tree> <file_path> <group_path>
-     Add a file reference to project, source\_tree: <absolute>/<group>/BUILT\_PRODUCTS\_DIR/SOURCE\_ROOT/DEVELOPER\_DIR/SDKROOT, group_path like: /Products.
+     Add a file reference to project, source_tree: <absolute>/<group>/BUILT_PRODUCTS_DIR/SOURCE_ROOT/DEVELOPER_DIR/SDKROOT, group_path like: /Products.
 
  * touch
      Rewrite the project file
