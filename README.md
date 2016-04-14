@@ -58,6 +58,12 @@ Actions:
  * add-resources-bundle <bundle_path>
      Add a bundle to the project and in the `Copy Bundle Resources` build phase
 
+ * add-dependency-target <target_name>
+     Add a dependency target for target.
+
+ * add-file-reference <source_tree> <file_path> <group_path>
+     Add a file reference to project, source\_tree: <absolute>/<group>/BUILT\_PRODUCTS\_DIR/SOURCE\_ROOT/DEVELOPER\_DIR/SDKROOT, group_path like: /Products.
+
  * touch
      Rewrite the project file
 ```
