@@ -20,4 +20,6 @@
 - (id<PBXBuildPhase>) defaultResourceBuildPhase;
 - (id<PBXBuildPhase>) defaultHeaderBuildPhase;
 
+- (void)addDependency:(id)arg1;
+
 @end

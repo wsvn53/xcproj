@@ -26,6 +26,7 @@
 		08FB779EFE84155DC02AAC07 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		32A70AAB03705E1F00C91783 /* xcproj_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = xcproj_Prefix.pch; path = Sources/xcproj_Prefix.pch; sourceTree = "<group>"; };
 		8DD76FA10486AA7600D96B5E /* xcproj */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = xcproj; sourceTree = BUILT_PRODUCTS_DIR; };
+		AAB317AB1CBF5BC9000B2DDA /* PBXTargetDependency.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PBXTargetDependency.h; sourceTree = "<group>"; };
 		C2093AE31CB58852007F779E /* XcodeVersionCompatibility.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = XcodeVersionCompatibility.h; path = Sources/XcodeVersionCompatibility.h; sourceTree = "<group>"; };
 		C2093AE41CB58852007F779E /* XcodeVersionCompatibility.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = XcodeVersionCompatibility.m; path = Sources/XcodeVersionCompatibility.m; sourceTree = "<group>"; };
 		C20F5C151A92A57A004ADE6B /* IDEBuildParameters.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = IDEBuildParameters.h; sourceTree = "<group>"; };
@@ -171,6 +172,7 @@
 				DA8C9FFD1302AF93008B3560 /* PBXProject.h */,
 				DA7A0218134F06FF00F89E9B /* PBXReference.h */,
 				DA8C9FFE1302AF93008B3560 /* PBXTarget.h */,
+				AAB317AB1CBF5BC9000B2DDA /* PBXTargetDependency.h */,
 				DA7A0D4F135304F000F89E9B /* XCBuildConfiguration.h */,
 				DAF6DA9515076749002AFA90 /* XCConfigurationList.h */,
 			);

@@ -5,5 +5,6 @@
 #import <DevToolsCore/PBXProject.h>
 #import <DevToolsCore/PBXReference.h>
 #import <DevToolsCore/PBXTarget.h>
+#import <DevToolsCore/PBXTargetDependency.h>
 #import <DevToolsCore/XCBuildConfiguration.h>
 #import <DevToolsCore/XCConfigurationList.h>

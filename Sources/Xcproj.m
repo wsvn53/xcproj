@@ -362,7 +362,7 @@ static void WorkaroundRadar18512876(void)
 
 - (NSArray *) allowedActions
 {
-	return [NSArray arrayWithObjects:@"list-targets", @"list-headers", @"read-build-setting", @"write-build-setting", @"add-xcconfig", @"add-resources-bundle", @"touch", nil];
+	return [NSArray arrayWithObjects:@"list-targets", @"list-headers", @"read-build-setting", @"write-build-setting", @"add-dependency-target", @"add-xcconfig", @"add-resources-bundle", @"touch", nil];
 }
 
 - (void) printUsage:(int)exitCode
@@ -383,6 +383,8 @@ static void WorkaroundRadar18512876(void)
 	         @"     Evaluate a build setting and print its value. If the build setting does not exist, nothing is printed\n\n"
 	         @" * write-build-setting <build_setting> <value>\n"
 	         @"     Assign a value to a build setting. If the build setting does not exist, it is added to the target\n\n"
+	         @" * add-dependency-target <build_setting>\n"
+	         @"     Add a dependency target for target.\n\n"
 	         @" * add-xcconfig <xcconfig_path>\n"
 	         @"     Add an xcconfig file to the project and base all configurations on it\n\n"
 	         @" * add-resources-bundle <bundle_path>\n"
@@ -455,6 +457,7 @@ static void WorkaroundRadar18512876(void)
 	
 	NSString *buildSetting = arguments[0];
 	NSString *value = arguments[1];
+//	value = value.length==0?nil:arguments[1];
 	if (_target)
 	{
 		[_target setBuildSetting:value forKeyPath:buildSetting];
@@ -476,6 +479,21 @@ static void WorkaroundRadar18512876(void)
 				[buildConfiguration setBuildSetting:value forKeyPath:buildSetting];
 			}
 		}
+	}
+	
+	return [self writeProject];
+}
+
+- (NSNumber *) addDependencyTarget:(NSArray *)arguments
+{
+	if ([arguments count] != 1)
+		[self printUsage:EX_USAGE];
+	
+	NSString *dependencyTargetName = arguments[0];
+	id<PBXTarget> dependencyTarget = [_project targetNamed:dependencyTargetName];
+	if (_target && dependencyTarget) {
+		id<PBXTargetDependency> targetDependency = [[(id<PBXProject>)NSClassFromString(@"PBXTargetDependency") class] dependencyWithTarget:dependencyTarget];
+		[_target addDependency:targetDependency];
 	}
 	
 	return [self writeProject];
