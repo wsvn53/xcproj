@@ -362,7 +362,7 @@ static void WorkaroundRadar18512876(void)
 
 - (NSArray *) allowedActions
 {
-	return [NSArray arrayWithObjects:@"list-targets", @"list-headers", @"read-build-setting", @"write-build-setting", @"add-dependency-target", @"add-xcconfig", @"add-resources-bundle", @"touch", nil];
+	return [NSArray arrayWithObjects:@"list-targets", @"list-headers", @"read-build-setting", @"write-build-setting", @"add-dependency-target", @"add-file-reference", @"add-xcconfig", @"add-resources-bundle", @"touch", nil];
 }
 
 - (void) printUsage:(int)exitCode
@@ -385,6 +385,8 @@ static void WorkaroundRadar18512876(void)
 	         @"     Assign a value to a build setting. If the build setting does not exist, it is added to the target\n\n"
 	         @" * add-dependency-target <build_setting>\n"
 	         @"     Add a dependency target for target.\n\n"
+	         @" * add-file-reference sourceTree filePath groupPath\n"
+	         @"     Add a file reference to project, sourceTree: <absolute>/<group>/BUILT_PRODUCTS_DIR/SOURCE_ROOT/DEVELOPER_DIR/SDKROOT, groupPath like: /Products.\n\n"
 	         @" * add-xcconfig <xcconfig_path>\n"
 	         @"     Add an xcconfig file to the project and base all configurations on it\n\n"
 	         @" * add-resources-bundle <bundle_path>\n"
@@ -457,7 +459,6 @@ static void WorkaroundRadar18512876(void)
 	
 	NSString *buildSetting = arguments[0];
 	NSString *value = arguments[1];
-//	value = value.length==0?nil:arguments[1];
 	if (_target)
 	{
 		[_target setBuildSetting:value forKeyPath:buildSetting];
@@ -495,6 +496,67 @@ static void WorkaroundRadar18512876(void)
 		id<PBXTargetDependency> targetDependency = [[(id<PBXProject>)NSClassFromString(@"PBXTargetDependency") class] dependencyWithTarget:dependencyTarget];
 		[_target addDependency:targetDependency];
 	}
+	
+	return [self writeProject];
+}
+
+
+
+- (NSNumber *) addFileReference:(NSArray *)arguments
+{
+	if ([arguments count] != 3)
+		[self printUsage:EX_USAGE];
+	
+	NSString *sourceTree = arguments[0];
+	NSString *filePath = arguments[1];
+	NSString *groupPath = arguments[2];
+	
+	// find out destination group
+	id<PBXGroup> destGroup = [_project rootGroup];
+	NSMutableArray *groupPaths = [NSMutableArray arrayWithArray:[groupPath componentsSeparatedByString:@"/"]];
+	if ([groupPaths[0] isEqualToString:@""]) {
+    	[groupPaths removeObjectAtIndex:0];
+	}
+	while (groupPaths.count > 0) {
+		NSString *currentGroupName = groupPaths[0];
+		if ([currentGroupName isEqualToString:@""]) {
+			break;
+		}
+		
+		id<PBXGroup> currentGroup = nil;
+		for (id<PBXGroup> group in [destGroup children]) {
+			if ([group isKindOfClass:NSClassFromString(@"PBXGroup")] &&
+				[[group name] isEqualToString:currentGroupName]) {
+				currentGroup = group;
+				break;
+			}
+		}
+		
+		if (currentGroup == nil) {
+			// TODO: group not exist, add one
+			// skip this time
+			break;
+		}
+		destGroup = currentGroup;
+		[groupPaths removeObjectAtIndex:0];
+	}
+	
+	// file reference
+	NSString *fileName = [filePath lastPathComponent];
+	id<PBXFileReference> destFileRef = nil;
+	// if group contains file, just modify file
+	for (id<PBXFileReference> fileItem in [destGroup children]) {
+		if ([fileItem isKindOfClass:NSClassFromString(@"PBXFileReference")] &&
+			[[fileItem name] isEqualToString:fileName]) {
+			destFileRef = fileItem;
+			break;
+		}
+	}
+	if (destFileRef == nil) {
+    	[[(id<PBXFileReference>)NSClassFromString(@"PBXFileReference") class] alloc];
+	}
+	(void)[destFileRef initWithName:fileName path:filePath sourceTree:sourceTree];
+	[destGroup addItem:destFileRef];
 	
 	return [self writeProject];
 }
