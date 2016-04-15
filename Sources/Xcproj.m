@@ -13,6 +13,7 @@
 #import "XCDUndocumentedChecker.h"
 #import "XMLPlistDecoder.h"
 #import "XcodeVersionCompatibility.h"
+#import <objc/runtime.h>
 
 @implementation Xcproj
 {
@@ -362,7 +363,7 @@ static void WorkaroundRadar18512876(void)
 
 - (NSArray *) allowedActions
 {
-	return [NSArray arrayWithObjects:@"list-targets", @"list-headers", @"read-build-setting", @"write-build-setting", @"add-dependency-target", @"add-file-reference", @"add-xcconfig", @"add-resources-bundle", @"touch", nil];
+	return [NSArray arrayWithObjects:@"list-targets", @"list-headers", @"read-build-setting", @"write-build-setting", @"add-dependency-target", @"add-file-reference", @"add-xcconfig", @"add-copy-file", @"add-resources-bundle", @"touch", nil];
 }
 
 - (void) printUsage:(int)exitCode
@@ -384,9 +385,13 @@ static void WorkaroundRadar18512876(void)
 	         @" * write-build-setting <build_setting> <value>\n"
 	         @"     Assign a value to a build setting. If the build setting does not exist, it is added to the target\n\n"
 	         @" * add-dependency-target <target_name>\n"
-	         @"     Add a dependency target for target.\n\n"
+	         @"     Add dependency target for target.\n\n"
 	         @" * add-file-reference <source_tree> <file_path> <group_path>\n"
-	         @"     Add a file reference to project, source_tree: <absolute>/<group>/BUILT_PRODUCTS_DIR/SOURCE_ROOT/DEVELOPER_DIR/SDKROOT, group_path like: /Products.\n\n"
+	         @"     Add file reference to project.\n",
+			 @"     source_tree: <absolute>/<group>/BUILT_PRODUCTS_DIR/SOURCE_ROOT/DEVELOPER_DIR/SDKROOT\n",
+			 @"     group_path like: /Products.\n\n"
+	         @" * add-copy-file <project_file_path> <phase_name>\n"
+	         @"     Add project file reference to `Copy Files` build phase, project_file_path like: /Products/test.app.\n\n"
 	         @" * add-xcconfig <xcconfig_path>\n"
 	         @"     Add an xcconfig file to the project and base all configurations on it\n\n"
 	         @" * add-resources-bundle <bundle_path>\n"
@@ -557,6 +562,64 @@ static void WorkaroundRadar18512876(void)
 	}
 	(void)[destFileRef initWithName:fileName path:filePath sourceTree:sourceTree];
 	[destGroup addItem:destFileRef];
+	
+	return [self writeProject];
+}
+
+- (NSNumber *) addCopyFile:(NSArray *)arguments
+{
+	if ([arguments count] != 2)
+		[self printUsage:EX_USAGE];
+	
+	if (_target) {
+		NSString *filePath = arguments[0];
+		NSString *phaseName = arguments[1];
+		
+		// find out `Copy Files` build phase
+		id<PBXCopyFilesBuildPhase> copyPhase = nil;
+		NSArray *copyBuildPhases = [_target copyFilesBuildPhases];
+		for (id<PBXCopyFilesBuildPhase> phase in copyBuildPhases) {
+			NSString *buildPhaseName = [phase name];
+			if ([buildPhaseName isEqualToString:phaseName]) {
+				copyPhase = phase;
+				break;
+			}
+		}
+		if (copyPhase == nil) {
+			return [self writeProject];
+		}
+		// find out file reference by file_path
+		id<PBXFileReference> fileRef = nil;
+		id<PBXGroup> groupRef = [_project rootGroup];
+		NSMutableArray *pathComponents = [NSMutableArray arrayWithArray:[filePath pathComponents]];
+		if ([pathComponents[0] isEqualToString:@"/"]) {
+			[pathComponents removeObjectAtIndex:0];
+		}
+		while (pathComponents.count > 0) {
+			NSString *pathName = pathComponents[0];
+			id<PBXReference> currentGroup = [groupRef itemNamed:pathName];
+			[pathComponents removeObjectAtIndex:0];
+			if (currentGroup == nil) {
+				break;
+			}
+			if ([currentGroup isKindOfClass:NSClassFromString(@"PBXFileReference")]) {
+				fileRef = (id<PBXFileReference>)currentGroup;
+			} else {
+    			groupRef = (id<PBXGroup>)currentGroup;
+			}
+		}
+		
+		if (fileRef) {
+			NSArray *buildFiles = [[copyPhase buildFiles] copy];
+			for (id<PBXBuildFile> buildFile in buildFiles) {
+				if ([buildFile fileReference] == fileRef) {
+					// contains some reference, remove it
+					[copyPhase removeBuildFile:buildFile];
+				}
+			}
+			[copyPhase addReference:fileRef];
+		}
+	}
 	
 	return [self writeProject];
 }

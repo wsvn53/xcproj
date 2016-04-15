@@ -15,8 +15,8 @@
 - (NSArray<PBXFileReference> *) addFiles:(NSArray *)files copy:(BOOL)copy createGroupsRecursively:(BOOL)createGroupsRecursively;
 
 - (unsigned long long)itemCount;
-- (id)itemNamed:(id)arg1;
-- (id)itemAtIndex:(unsigned long long)arg1;
+- (id<PBXReference>)itemNamed:(id)arg1;
+- (id<PBXGroup>)itemAtIndex:(unsigned long long)arg1;
 - (unsigned long long)indexOfItem:(id)arg1;
 - (void)removeItem:(id)arg1;
 - (void)removeItemsAtIndexes:(id)arg1;

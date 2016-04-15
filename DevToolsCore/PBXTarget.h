@@ -21,5 +21,10 @@
 - (id<PBXBuildPhase>) defaultHeaderBuildPhase;
 
 - (void)addDependency:(id)arg1;
+- (NSMutableArray *)buildPhases;
+- (NSArray *)copyFilesBuildPhases;
+- (NSArray *)shellScriptBuildPhases;
+- (NSArray *)appleScriptBuildPhases;
+- (NSArray *)buildPhasesOfClass:(Class)arg1;
 
 @end
