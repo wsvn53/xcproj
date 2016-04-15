@@ -528,40 +528,25 @@ static void WorkaroundRadar18512876(void)
 			break;
 		}
 		
-		id<PBXGroup> currentGroup = nil;
-		for (id<PBXGroup> group in [destGroup children]) {
-			if ([group isKindOfClass:NSClassFromString(@"PBXGroup")] &&
-				[[group name] isEqualToString:currentGroupName]) {
-				currentGroup = group;
-				break;
-			}
-		}
-		
-		if (currentGroup == nil) {
+		destGroup = (id<PBXGroup>)[destGroup itemNamed:currentGroupName];
+		if (destGroup == nil) {
 			// TODO: group not exist, add one
-			// skip this time
-			break;
+			return [self writeProject];
 		}
-		destGroup = currentGroup;
 		[groupPaths removeObjectAtIndex:0];
 	}
 	
 	// file reference
 	NSString *fileName = [filePath lastPathComponent];
-	id<PBXFileReference> destFileRef = nil;
-	// if group contains file, just modify file
-	for (id<PBXFileReference> fileItem in [destGroup children]) {
-		if ([fileItem isKindOfClass:NSClassFromString(@"PBXFileReference")] &&
-			[[fileItem name] isEqualToString:fileName]) {
-			destFileRef = fileItem;
-			break;
-		}
-	}
+	id<PBXFileReference> destFileRef = (id<PBXFileReference>)[destGroup itemNamed:fileName];
 	if (destFileRef == nil) {
-    	[[(id<PBXFileReference>)NSClassFromString(@"PBXFileReference") class] alloc];
+    	destFileRef = [[(id<PBXFileReference>)NSClassFromString(@"PBXFileReference") class] alloc];
+    	destFileRef = [destFileRef initWithName:fileName path:filePath sourceTree:sourceTree];
+    	[destGroup addItem:destFileRef];
+	} else {
+		[destFileRef setName:fileName];
+		[destFileRef setPath:filePath andSourceTree:sourceTree];
 	}
-	(void)[destFileRef initWithName:fileName path:filePath sourceTree:sourceTree];
-	[destGroup addItem:destFileRef];
 	
 	return [self writeProject];
 }
