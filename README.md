@@ -64,6 +64,9 @@ Actions:
  * add-file-reference <source_tree> <file_path> <group_path>
      Add a file reference to project, source_tree: <absolute>/<group>/BUILT_PRODUCTS_DIR/SOURCE_ROOT/DEVELOPER_DIR/SDKROOT, group_path like: /Products.
 
+* add-copy-file <project_file_path> <phase_name>
+     Add project file reference to `Copy Files` build phase, project_file_path like: /Products/test.app.
+
  * touch
      Rewrite the project file
 ```

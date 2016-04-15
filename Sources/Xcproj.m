@@ -387,9 +387,7 @@ static void WorkaroundRadar18512876(void)
 	         @" * add-dependency-target <target_name>\n"
 	         @"     Add dependency target for target.\n\n"
 	         @" * add-file-reference <source_tree> <file_path> <group_path>\n"
-	         @"     Add file reference to project.\n",
-			 @"     source_tree: <absolute>/<group>/BUILT_PRODUCTS_DIR/SOURCE_ROOT/DEVELOPER_DIR/SDKROOT\n",
-			 @"     group_path like: /Products.\n\n"
+	         @"     Add file reference to project.\n     source_tree: <absolute>/<group>/BUILT_PRODUCTS_DIR/SOURCE_ROOT/DEVELOPER_DIR/SDKROOT\n     group_path like: /Products.\n\n"
 	         @" * add-copy-file <project_file_path> <phase_name>\n"
 	         @"     Add project file reference to `Copy Files` build phase, project_file_path like: /Products/test.app.\n\n"
 	         @" * add-xcconfig <xcconfig_path>\n"
