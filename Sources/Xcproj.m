@@ -498,6 +498,8 @@ static void WorkaroundRadar18512876(void)
 	if (_target && dependencyTarget) {
 		id<PBXTargetDependency> targetDependency = [[(id<PBXProject>)NSClassFromString(@"PBXTargetDependency") class] dependencyWithTarget:dependencyTarget];
 		[_target addDependency:targetDependency];
+	} else {
+		@throw [NSException exceptionWithName:@"FAILED" reason:@"Target or dependency target not found." userInfo:nil];
 	}
 	
 	return [self writeProject];
@@ -529,7 +531,7 @@ static void WorkaroundRadar18512876(void)
 		destGroup = (id<PBXGroup>)[destGroup itemNamed:currentGroupName];
 		if (destGroup == nil) {
 			// TODO: group not exist, add one
-			return [self writeProject];
+    		@throw [NSException exceptionWithName:@"FAILED" reason:[NSString stringWithFormat:@"Destisnation group [%@] not found.", groupPath] userInfo:nil];
 		}
 		[groupPaths removeObjectAtIndex:0];
 	}
@@ -569,7 +571,7 @@ static void WorkaroundRadar18512876(void)
 			}
 		}
 		if (copyPhase == nil) {
-			return [self writeProject];
+    		@throw [NSException exceptionWithName:@"FAILED" reason:[NSString stringWithFormat:@"Build phase [%@] not found.", phaseName] userInfo:nil];
 		}
 		// find out file reference by file_path
 		id<PBXFileReference> fileRef = nil;
@@ -601,6 +603,8 @@ static void WorkaroundRadar18512876(void)
 				}
 			}
 			[copyPhase addReference:fileRef];
+		} else {
+    		@throw [NSException exceptionWithName:@"FAILED" reason:[NSString stringWithFormat:@"Project file [%@] not found.", filePath] userInfo:nil];
 		}
 	}
 	
