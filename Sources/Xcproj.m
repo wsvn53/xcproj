@@ -363,7 +363,7 @@ static void WorkaroundRadar18512876(void)
 
 - (NSArray *) allowedActions
 {
-	return [NSArray arrayWithObjects:@"list-targets", @"list-headers", @"read-build-setting", @"write-build-setting", @"add-dependency-target", @"add-file-reference", @"add-xcconfig", @"add-copy-file", @"add-resources-bundle", @"touch", nil];
+	return [NSArray arrayWithObjects:@"list-targets", @"list-headers", @"read-build-setting", @"write-build-setting", @"add-dependency-target", @"add-file-reference", @"add-xcconfig", @"add-copy-file", @"add-resources-bundle", @"remove-build-phase", @"touch", nil];
 }
 
 - (void) printUsage:(int)exitCode
@@ -394,6 +394,8 @@ static void WorkaroundRadar18512876(void)
 	         @"     Add an xcconfig file to the project and base all configurations on it\n\n"
 	         @" * add-resources-bundle <bundle_path>\n"
 	         @"     Add a bundle to the project and in the `Copy Bundle Resources` build phase\n\n"
+	         @" * remove-build-phase <phase_name>\n"
+	         @"     Remove a build phase of project named <phase_name>\n\n"
 	         @" * touch\n"
 	         @"     Rewrite the project file\n");
 	exit(exitCode);
@@ -505,8 +507,6 @@ static void WorkaroundRadar18512876(void)
 	return [self writeProject];
 }
 
-
-
 - (NSNumber *) addFileReference:(NSArray *)arguments
 {
 	if ([arguments count] != 3)
@@ -556,6 +556,7 @@ static void WorkaroundRadar18512876(void)
 	if ([arguments count] != 2)
 		[self printUsage:EX_USAGE];
 	
+	BOOL projectChanged = NO;
 	if (_target) {
 		NSString *filePath = arguments[0];
 		NSString *phaseName = arguments[1];
@@ -603,12 +604,34 @@ static void WorkaroundRadar18512876(void)
 				}
 			}
 			[copyPhase addReference:fileRef];
+			projectChanged = YES;
 		} else {
     		@throw [NSException exceptionWithName:@"FAILED" reason:[NSString stringWithFormat:@"Project file [%@] not found.", filePath] userInfo:nil];
 		}
 	}
 	
-	return [self writeProject];
+	return projectChanged?[self writeProject]:@(EX_OK);
+}
+
+- (NSNumber *) removeBuildPhase:(NSArray *)arguments
+{
+	if ([arguments count] != 1)
+		[self printUsage:EX_USAGE];
+	
+	BOOL projectChanged = NO;
+	if (_target) {
+		NSString *phaseName = arguments[0];
+		NSArray *buildPhases = [_target buildPhases];
+		for (id<PBXBuildPhase> phase in buildPhases) {
+			if ([[phase name] isEqualToString:phaseName]) {
+				[_target removeBuildPhase:phase];
+				projectChanged = YES;
+				break;
+			}
+		}
+	}
+	
+	return projectChanged?[self writeProject]:@(EX_OK);
 }
 
 - (NSNumber *) writeProject

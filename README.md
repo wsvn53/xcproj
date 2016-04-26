@@ -52,20 +52,25 @@ Actions:
  * write-build-setting <build_setting> <value>
      Assign a value to a build setting. If the build setting does not exist, it is added to the target
 
+ * add-dependency-target <target_name>
+     Add dependency target for target.
+
+ * add-file-reference <source_tree> <file_path> <group_path>
+     Add file reference to project.
+     source_tree: <absolute>/<group>/BUILT_PRODUCTS_DIR/SOURCE_ROOT/DEVELOPER_DIR/SDKROOT
+     group_path like: /Products.
+
+ * add-copy-file <project_file_path> <phase_name>
+     Add project file reference to `Copy Files` build phase, project_file_path like: /Products/test.app.
+
  * add-xcconfig <xcconfig_path>
      Add an xcconfig file to the project and base all configurations on it
 
  * add-resources-bundle <bundle_path>
      Add a bundle to the project and in the `Copy Bundle Resources` build phase
 
- * add-dependency-target <target_name>
-     Add a dependency target for target.
-
- * add-file-reference <source_tree> <file_path> <group_path>
-     Add a file reference to project, source_tree: <absolute>/<group>/BUILT_PRODUCTS_DIR/SOURCE_ROOT/DEVELOPER_DIR/SDKROOT, group_path like: /Products.
-
- * add-copy-file <project_file_path> <phase_name>
-     Add project file reference to `Copy Files` build phase, project_file_path like: /Products/test.app.
+ * remove-build-phase <phase_name>
+     Remove a build phase of project named <phase_name>
 
  * touch
      Rewrite the project file

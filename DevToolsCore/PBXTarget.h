@@ -26,5 +26,7 @@
 - (NSArray *)shellScriptBuildPhases;
 - (NSArray *)appleScriptBuildPhases;
 - (NSArray *)buildPhasesOfClass:(Class)arg1;
+- (void)removeBuildPhase:(id<PBXBuildPhase>)buildPhase;
+- (void)insertBuildPhase:(id<PBXBuildPhase>)buildPhase atIndex:(unsigned long long)index;
 
 @end
