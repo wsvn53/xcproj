@@ -56,23 +56,25 @@ static NSBundle * XcodeBundle(void)
 		task.launchPath = @"/usr/bin/xcode-select";
 		task.arguments = @[@"--print-path"];
 		task.standardOutput = [NSPipe new];
-
-		[task launch];
-		[task waitUntilExit];
-
-		if (task.terminationStatus == 0)
+		
+		@try
 		{
-			NSData *outputData = [[task.standardOutput fileHandleForReading] readDataToEndOfFile];
-			NSString *outputString = [[NSString alloc] initWithData:outputData encoding:NSUTF8StringEncoding];
-			NSString *xcodePath = [[outputString stringByDeletingLastPathComponent] stringByDeletingLastPathComponent];
-			xcodeBundle = XcodeBundleAtPath(xcodePath);
+			[task launch];
+			[task waitUntilExit];
+			
+			if (task.terminationStatus == 0)
+			{
+				NSData *outputData = [[task.standardOutput fileHandleForReading] readDataToEndOfFile];
+				NSString *outputString = [[NSString alloc] initWithData:outputData encoding:NSUTF8StringEncoding];
+				NSString *xcodePath = [[outputString stringByDeletingLastPathComponent] stringByDeletingLastPathComponent];
+				xcodeBundle = XcodeBundleAtPath(xcodePath);
+			}
 		}
-	}
-
-	if (!xcodeBundle)
-	{
-		NSURL *xcodeURL = [[NSWorkspace sharedWorkspace] URLForApplicationWithBundleIdentifier:XcodeBundleIdentifier];
-		xcodeBundle = XcodeBundleAtPath(xcodeURL.path);
+		@catch (NSException *exception)
+		{
+			NSURL *xcodeURL = [[NSWorkspace sharedWorkspace] URLForApplicationWithBundleIdentifier:XcodeBundleIdentifier];
+			xcodeBundle = XcodeBundleAtPath(xcodeURL.path);
+		}
 	}
 	
 	if (!xcodeBundle)
@@ -203,7 +205,7 @@ static void WorkaroundRadar18512876(void)
 		NSError *classError = nil;
 		Class class = XCDClassFromProtocol(protocol, &classError);
 		if (class)
-			[self setValue:class forKey:[NSString stringWithCString:protocol_getName(protocol) encoding:NSUTF8StringEncoding]];
+			[self setValue:class forKey:@(protocol_getName(protocol))];
 		else
 		{
 			isSafe = NO;
@@ -349,7 +351,7 @@ static void WorkaroundRadar18512876(void)
 	if ([arguments count] >= 2)
 		actionArguments = [arguments subarrayWithRange:NSMakeRange(1, [arguments count] - 1)];
 	else
-		actionArguments = [NSArray array];
+		actionArguments = @[];
 	
 	NSArray *actionParts = [[action componentsSeparatedByString:@"-"] valueForKeyPath:@"capitalizedString"];
 	NSMutableString *selectorString = [NSMutableString stringWithString:[actionParts componentsJoinedByString:@""]];
@@ -363,7 +365,17 @@ static void WorkaroundRadar18512876(void)
 
 - (NSArray *) allowedActions
 {
-	return [NSArray arrayWithObjects:@"list-targets", @"list-headers", @"read-build-setting", @"write-build-setting", @"add-dependency-target", @"add-file-reference", @"add-xcconfig", @"add-copy-file", @"add-resources-bundle", @"remove-build-phase", @"touch", nil];
+	return @[ @"list-targets",
+	          @"list-headers",
+	          @"read-build-setting",
+	          @"write-build-setting",
+	          @"add-dependency-target",
+	          @"add-file-reference",
+	          @"add-copy-file",
+	          @"add-xcconfig",
+	          @"add-resources-bundle",
+	          @"remove-build-phase",
+	          @"touch" ];
 }
 
 - (void) printUsage:(int)exitCode
@@ -421,7 +433,7 @@ static void WorkaroundRadar18512876(void)
 	if ([arguments count] == 1)
 		headerRole = [[arguments objectAtIndex:0] capitalizedString];
 	
-	NSArray *allowedValues = [NSArray arrayWithObjects:@"All", @"Public", @"Project", @"Private", nil];
+	NSArray *allowedValues = @[ @"All", @"Public", @"Project", @"Private" ];
 	if (![allowedValues containsObject:headerRole])
 		@throw [DDCliParseException parseExceptionWithReason:[NSString stringWithFormat:@"list-headers argument must be one of {%@}.", [allowedValues componentsJoinedByString:@", "]] exitCode:EX_USAGE];
 	
@@ -694,7 +706,7 @@ static void WorkaroundRadar18512876(void)
 /*
 - (void) printBuildPhases
 {
-	for (NSString *buildPhase in [NSArray arrayWithObjects:@"Frameworks", @"Link", @"SourceCode", @"Resource", @"Header", nil])
+	for (NSString *buildPhase in @[ @"Frameworks", @"Link", @"SourceCode", @"Resource", @"Header" ])
 	{
 		ddprintf(@"%@\n", buildPhase);
 		SEL buildPhaseSelector = NSSelectorFromString([NSString stringWithFormat:@"default%@BuildPhase", buildPhase]);
@@ -781,7 +793,7 @@ static void WorkaroundRadar18512876(void)
 	id<PBXFileReference> fileReference = [_project fileReferenceForPath:filePath];
 	if (!fileReference)
 	{
-		NSArray *references = [[_project rootGroup] addFiles:[NSArray arrayWithObject:filePath] copy:NO createGroupsRecursively:NO];
+		NSArray *references = [[_project rootGroup] addFiles:@[ filePath ] copy:NO createGroupsRecursively:NO];
 		fileReference = [references lastObject];
 	}
 	return fileReference;
