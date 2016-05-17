@@ -372,12 +372,12 @@ static void WorkaroundRadar18512876(void)
 	          @"add-dependency-target",
 	          @"add-file-reference",
 	          @"add-copy-file",
-	          @"add-link-binary",
+	          @"add-link-library",
 	          @"add-xcconfig",
 	          @"add-resources-bundle",
 	          @"remove-build-phase",
 			  @"remove-file-reference",
-			  @"remove-link-binary",
+			  @"remove-link-library",
 	          @"touch" ];
 }
 
@@ -405,7 +405,7 @@ static void WorkaroundRadar18512876(void)
 	         @"     Add file reference to project.\n     source_tree: <absolute>/<group>/BUILT_PRODUCTS_DIR/SOURCE_ROOT/DEVELOPER_DIR/SDKROOT\n     group_path like: /Products.\n\n"
 	         @" * add-copy-file <project_file_path> <phase_name>\n"
 	         @"     Add project file reference to `Copy Files` build phase, project_file_path like: /Products/test.app.\n\n"
-	         @" * add-link-binary <project_file_path>\n"
+	         @" * add-link-library <project_file_path>\n"
 	         @"     Add project file reference to `Link Binary With Libraries` phase, project_file_path like: /Framework/test.framework.\n\n"
 	         @" * add-xcconfig <xcconfig_path>\n"
 	         @"     Add an xcconfig file to the project and base all configurations on it\n\n"
@@ -413,6 +413,10 @@ static void WorkaroundRadar18512876(void)
 	         @"     Add a bundle to the project and in the `Copy Bundle Resources` build phase\n\n"
 	         @" * remove-build-phase <phase_name>\n"
 	         @"     Remove a build phase of project named <phase_name>\n\n"
+	         @" * remove-file-reference <project_file_path>\n"
+	         @"     Remove reference <project_file_path> from project\n\n"
+	         @" * remove-link-library <library_name>\n"
+	         @"     Remove library named <library_name> of [Link Binary With Libraries]\n\n"
 	         @" * touch\n"
 	         @"     Rewrite the project file\n");
 	exit(exitCode);
@@ -612,7 +616,7 @@ static void WorkaroundRadar18512876(void)
 	return projectChanged?[self writeProject]:@(EX_OK);
 }
 
-- (NSNumber *) addLinkBinary:(NSArray *)arguments
+- (NSNumber *) addLinkLibrary:(NSArray *)arguments
 {
 	if ([arguments count] != 1)
 		[self printUsage:EX_USAGE];
@@ -687,34 +691,30 @@ static void WorkaroundRadar18512876(void)
 	return projectChanged?[self writeProject]:@(EX_OK);
 }
 
-- (NSNumber *) removeLinkBinary:(NSArray *)arguments
+- (NSNumber *) removeLinkLibrary:(NSArray *)arguments
 {
 	if ([arguments count] != 1)
 		[self printUsage:EX_USAGE];
 	
 	BOOL projectChanged = NO;
 	if (_target) {
-		NSString *filePath = arguments[0];
+		NSString *libraryName = arguments[0];
 		
 		// find out `Copy Files` build phase
 		id<PBXFrameworksBuildPhase> frameworkPhase = [_target defaultFrameworksBuildPhase];
 		if (frameworkPhase == nil) {
 			@throw [NSException exceptionWithName:@"FAILED" reason:[NSString stringWithFormat:@"Build phase [%@] not found.", [(id<PBXFrameworksBuildPhase>)(NSClassFromString(@"PBXFrameworksBuildPhase")) defaultName]] userInfo:nil];
 		}
-		// find out file reference by file_path
-		id<PBXFileReference> fileRef = [self fileReferenceByPath:filePath];
 		
-		if (fileRef) {
+		if (libraryName) {
 			NSArray *buildFiles = [[frameworkPhase buildFiles] copy];
 			for (id<PBXBuildFile> buildFile in buildFiles) {
-				if ([buildFile fileReference] == fileRef) {
+				if ([[[buildFile fileReference] name] isEqualToString:libraryName]) {
 					// contains some reference, remove it
 					[frameworkPhase removeBuildFile:buildFile];
+        			projectChanged = YES;
 				}
 			}
-			projectChanged = YES;
-		} else {
-			@throw [NSException exceptionWithName:@"FAILED" reason:[NSString stringWithFormat:@"Project file [%@] not found.", filePath] userInfo:nil];
 		}
 	}
 	
