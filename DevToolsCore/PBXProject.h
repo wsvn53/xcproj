@@ -17,4 +17,6 @@
 
 - (BOOL) writeToFileSystemProjectFile:(BOOL)projectWrite userFile:(BOOL)userWrite checkNeedsRevert:(BOOL)checkNeedsRevert;
 
+- (void)removeReference:(id<PBXFileReference>)arg1;
+
 @end

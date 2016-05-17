@@ -372,9 +372,12 @@ static void WorkaroundRadar18512876(void)
 	          @"add-dependency-target",
 	          @"add-file-reference",
 	          @"add-copy-file",
+	          @"add-link-binary",
 	          @"add-xcconfig",
 	          @"add-resources-bundle",
 	          @"remove-build-phase",
+			  @"remove-file-reference",
+			  @"remove-link-binary",
 	          @"touch" ];
 }
 
@@ -402,6 +405,8 @@ static void WorkaroundRadar18512876(void)
 	         @"     Add file reference to project.\n     source_tree: <absolute>/<group>/BUILT_PRODUCTS_DIR/SOURCE_ROOT/DEVELOPER_DIR/SDKROOT\n     group_path like: /Products.\n\n"
 	         @" * add-copy-file <project_file_path> <phase_name>\n"
 	         @"     Add project file reference to `Copy Files` build phase, project_file_path like: /Products/test.app.\n\n"
+	         @" * add-link-binary <project_file_path>\n"
+	         @"     Add project file reference to `Link Binary With Libraries` phase, project_file_path like: /Framework/test.framework.\n\n"
 	         @" * add-xcconfig <xcconfig_path>\n"
 	         @"     Add an xcconfig file to the project and base all configurations on it\n\n"
 	         @" * add-resources-bundle <bundle_path>\n"
@@ -587,25 +592,7 @@ static void WorkaroundRadar18512876(void)
     		@throw [NSException exceptionWithName:@"FAILED" reason:[NSString stringWithFormat:@"Build phase [%@] not found.", phaseName] userInfo:nil];
 		}
 		// find out file reference by file_path
-		id<PBXFileReference> fileRef = nil;
-		id<PBXGroup> groupRef = [_project rootGroup];
-		NSMutableArray *pathComponents = [NSMutableArray arrayWithArray:[filePath pathComponents]];
-		if ([pathComponents[0] isEqualToString:@"/"]) {
-			[pathComponents removeObjectAtIndex:0];
-		}
-		while (pathComponents.count > 0) {
-			NSString *pathName = pathComponents[0];
-			id<PBXReference> currentGroup = [groupRef itemNamed:pathName];
-			[pathComponents removeObjectAtIndex:0];
-			if (currentGroup == nil) {
-				break;
-			}
-			if ([currentGroup isKindOfClass:NSClassFromString(@"PBXFileReference")]) {
-				fileRef = (id<PBXFileReference>)currentGroup;
-			} else {
-    			groupRef = (id<PBXGroup>)currentGroup;
-			}
-		}
+		id<PBXFileReference> fileRef = [self fileReferenceByPath:filePath];
 		
 		if (fileRef) {
 			NSArray *buildFiles = [[copyPhase buildFiles] copy];
@@ -619,6 +606,42 @@ static void WorkaroundRadar18512876(void)
 			projectChanged = YES;
 		} else {
     		@throw [NSException exceptionWithName:@"FAILED" reason:[NSString stringWithFormat:@"Project file [%@] not found.", filePath] userInfo:nil];
+		}
+	}
+	
+	return projectChanged?[self writeProject]:@(EX_OK);
+}
+
+- (NSNumber *) addLinkBinary:(NSArray *)arguments
+{
+	if ([arguments count] != 1)
+		[self printUsage:EX_USAGE];
+	
+	BOOL projectChanged = NO;
+	if (_target) {
+		NSString *filePath = arguments[0];
+		
+		// find out `Copy Files` build phase
+		id<PBXFrameworksBuildPhase> frameworkPhase = [_target defaultFrameworksBuildPhase];
+		if (frameworkPhase == nil) {
+			@throw [NSException exceptionWithName:@"FAILED" reason:[NSString stringWithFormat:@"Build phase [%@] not found.", [(id<PBXFrameworksBuildPhase>)(NSClassFromString(@"PBXFrameworksBuildPhase")) defaultName]] userInfo:nil];
+		}
+		// find out file reference by file_path
+		id<PBXFileReference> fileRef = [self fileReferenceByPath:filePath];
+		
+		if (fileRef) {
+			NSArray *buildFiles = [[frameworkPhase buildFiles] copy];
+			for (id<PBXBuildFile> buildFile in buildFiles) {
+				if ([buildFile fileReference] == fileRef) {
+					// contains some reference, remove it
+					[frameworkPhase removeBuildFile:buildFile];
+				}
+			}
+			id<PBXBuildFile> buildRef = [(id<PBXBuildFile>)[NSClassFromString(@"PBXBuildFile") alloc] initWithReference:fileRef];
+			[frameworkPhase insertBuildFiles:@[buildRef] atIndex:0];
+			projectChanged = YES;
+		} else {
+			@throw [NSException exceptionWithName:@"FAILED" reason:[NSString stringWithFormat:@"Project file [%@] not found.", filePath] userInfo:nil];
 		}
 	}
 	
@@ -640,6 +663,58 @@ static void WorkaroundRadar18512876(void)
 				projectChanged = YES;
 				break;
 			}
+		}
+	}
+	
+	return projectChanged?[self writeProject]:@(EX_OK);
+}
+
+- (NSNumber *) removeFileReference:(NSArray *)arguments
+{
+	if ([arguments count] != 1)
+		[self printUsage:EX_USAGE];
+	
+	BOOL projectChanged = NO;
+	if (_target) {
+		NSString *filePath = arguments[0];
+		id<PBXFileReference> fileRef = [self fileReferenceByPath:filePath];
+		if (fileRef) {
+			[fileRef deleteFromProject];
+    		projectChanged = YES;
+		}
+	}
+	
+	return projectChanged?[self writeProject]:@(EX_OK);
+}
+
+- (NSNumber *) removeLinkBinary:(NSArray *)arguments
+{
+	if ([arguments count] != 1)
+		[self printUsage:EX_USAGE];
+	
+	BOOL projectChanged = NO;
+	if (_target) {
+		NSString *filePath = arguments[0];
+		
+		// find out `Copy Files` build phase
+		id<PBXFrameworksBuildPhase> frameworkPhase = [_target defaultFrameworksBuildPhase];
+		if (frameworkPhase == nil) {
+			@throw [NSException exceptionWithName:@"FAILED" reason:[NSString stringWithFormat:@"Build phase [%@] not found.", [(id<PBXFrameworksBuildPhase>)(NSClassFromString(@"PBXFrameworksBuildPhase")) defaultName]] userInfo:nil];
+		}
+		// find out file reference by file_path
+		id<PBXFileReference> fileRef = [self fileReferenceByPath:filePath];
+		
+		if (fileRef) {
+			NSArray *buildFiles = [[frameworkPhase buildFiles] copy];
+			for (id<PBXBuildFile> buildFile in buildFiles) {
+				if ([buildFile fileReference] == fileRef) {
+					// contains some reference, remove it
+					[frameworkPhase removeBuildFile:buildFile];
+				}
+			}
+			projectChanged = YES;
+		} else {
+			@throw [NSException exceptionWithName:@"FAILED" reason:[NSString stringWithFormat:@"Project file [%@] not found.", filePath] userInfo:nil];
 		}
 	}
 	
@@ -830,6 +905,31 @@ static void WorkaroundRadar18512876(void)
 		return YES;
 	
 	return [buildPhase addReference:fileReference];
+}
+
+- (id<PBXFileReference>)fileReferenceByPath:(NSString *)filePath
+{
+	id<PBXFileReference> fileRef = nil;
+	id<PBXGroup> groupRef = [_project rootGroup];
+	NSMutableArray *pathComponents = [NSMutableArray arrayWithArray:[filePath pathComponents]];
+	if ([pathComponents[0] isEqualToString:@"/"]) {
+		[pathComponents removeObjectAtIndex:0];
+	}
+	while (pathComponents.count > 0) {
+		NSString *pathName = pathComponents[0];
+		id<PBXReference> currentGroup = [groupRef itemNamed:pathName];
+		[pathComponents removeObjectAtIndex:0];
+		if (currentGroup == nil) {
+			break;
+		}
+		if ([currentGroup isKindOfClass:NSClassFromString(@"PBXFileReference")]) {
+			fileRef = (id<PBXFileReference>)currentGroup;
+		} else {
+			groupRef = (id<PBXGroup>)currentGroup;
+		}
+	}
+	
+	return fileRef;
 }
 
 @end

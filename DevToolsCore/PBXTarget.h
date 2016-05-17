@@ -1,6 +1,7 @@
 #import "PBXBuildPhase.h"
 #import "XCConfigurationList.h"
 #import "IDEBuildParameters.h"
+#import "PBXFrameworksBuildPhase.h"
 
 @protocol PBXTarget <NSObject>
 
@@ -14,7 +15,7 @@
 
 - (id<PBXBuildPhase>) buildPhaseOfClass:(Class)buildPhaseClass;
 - (void) addBuildPhase:(id<PBXBuildPhase>)buildPhase;
-- (id<PBXBuildPhase>) defaultFrameworksBuildPhase;
+- (id<PBXFrameworksBuildPhase>) defaultFrameworksBuildPhase;
 - (id<PBXBuildPhase>) defaultLinkBuildPhase;
 - (id<PBXBuildPhase>) defaultSourceCodeBuildPhase;
 - (id<PBXBuildPhase>) defaultResourceBuildPhase;

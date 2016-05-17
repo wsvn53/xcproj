@@ -39,6 +39,7 @@
 		8DD76FA10486AA7600D96B5E /* xcproj */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = xcproj; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA17B2951CBFBDED00171742 /* PBXCopyFilesBuildPhase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PBXCopyFilesBuildPhase.h; sourceTree = "<group>"; };
 		AAB317AB1CBF5BC9000B2DDA /* PBXTargetDependency.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PBXTargetDependency.h; sourceTree = "<group>"; };
+		AAB52E8E1CEB1978005941C9 /* PBXFrameworksBuildPhase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PBXFrameworksBuildPhase.h; sourceTree = "<group>"; };
 		C2093AE31CB58852007F779E /* XcodeVersionCompatibility.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = XcodeVersionCompatibility.h; path = Sources/XcodeVersionCompatibility.h; sourceTree = "<group>"; };
 		C2093AE41CB58852007F779E /* XcodeVersionCompatibility.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = XcodeVersionCompatibility.m; path = Sources/XcodeVersionCompatibility.m; sourceTree = "<group>"; };
 		C20F5C151A92A57A004ADE6B /* IDEBuildParameters.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = IDEBuildParameters.h; sourceTree = "<group>"; };
@@ -206,6 +207,7 @@
 				DA7A0218134F06FF00F89E9B /* PBXReference.h */,
 				DA8C9FFE1302AF93008B3560 /* PBXTarget.h */,
 				AAB317AB1CBF5BC9000B2DDA /* PBXTargetDependency.h */,
+				AAB52E8E1CEB1978005941C9 /* PBXFrameworksBuildPhase.h */,
 				DA7A0D4F135304F000F89E9B /* XCBuildConfiguration.h */,
 				DAF6DA9515076749002AFA90 /* XCConfigurationList.h */,
 				AA17B2951CBFBDED00171742 /* PBXCopyFilesBuildPhase.h */,
@@ -524,6 +526,7 @@
 				C235E5521CB5BB4300AF2744 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
