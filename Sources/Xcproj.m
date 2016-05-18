@@ -379,6 +379,8 @@ static void WorkaroundRadar18512876(void)
 	          @"remove-build-phase",
 			  @"remove-file-reference",
 			  @"remove-link-library",
+	          @"batch-add-references",
+	          @"batch-add-copy-files",
 	          @"touch" ];
 }
 
@@ -420,6 +422,10 @@ static void WorkaroundRadar18512876(void)
 	         @"     Remove reference <project_file_path> from project\n\n"
 	         @" * remove-link-library <library_name>\n"
 	         @"     Remove library named <library_name> of [Link Binary With Libraries]\n\n"
+	         @" * batch-add-references <srouce_tree> <filelist> <gourp_path>\n"
+	         @"     Batch add references in <filelist> to <group_path>\n\n"
+	         @" * batch-add-copy-files <filelist> <phase_name>\n"
+	         @"     Batch add files in <filelist> to build phase named <phase_name>\n\n"
 	         @" * touch\n"
 	         @"     Rewrite the project file\n");
 	exit(exitCode);
@@ -567,6 +573,11 @@ static void WorkaroundRadar18512876(void)
 
 - (NSNumber *) addFileReference:(NSArray *)arguments
 {
+    return [self addFileReference:arguments isBatch:NO];
+}
+
+- (NSNumber *) addFileReference:(NSArray *)arguments isBatch:(BOOL)isBatch
+{
 	if ([arguments count] != 3)
 		[self printUsage:EX_USAGE];
 	
@@ -586,30 +597,49 @@ static void WorkaroundRadar18512876(void)
 			break;
 		}
 		
-		destGroup = (id<PBXGroup>)[destGroup itemNamed:currentGroupName];
-		if (destGroup == nil) {
-			// TODO: group not exist, add one
-    		@throw [NSException exceptionWithName:@"FAILED" reason:[NSString stringWithFormat:@"Destisnation group [%@] not found.", groupPath] userInfo:nil];
+		id<PBXGroup> group = (id<PBXGroup>)[destGroup itemNamed:currentGroupName];
+		if (group == nil) {
+			// group not exist, add one
+			group = [(id<PBXGroup>)NSClassFromString(@"PBXGroup") groupWithName:currentGroupName];
+			[destGroup addItem:group];
 		}
+		destGroup = group;
 		[groupPaths removeObjectAtIndex:0];
 	}
 	
-	// file reference
-	NSString *fileName = [filePath lastPathComponent];
-	id<PBXFileReference> destFileRef = (id<PBXFileReference>)[destGroup itemNamed:fileName];
-	if (destFileRef == nil) {
-    	destFileRef = [[(id<PBXFileReference>)NSClassFromString(@"PBXFileReference") class] alloc];
-    	destFileRef = [destFileRef initWithName:fileName path:filePath sourceTree:sourceTree];
-    	[destGroup addItem:destFileRef];
-	} else {
-		[destFileRef setName:fileName];
-		[destFileRef setPath:filePath andSourceTree:sourceTree];
+	NSArray *fileList = @[filePath];
+	if (isBatch) {
+    	fileList = [[NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:nil] componentsSeparatedByString:@"\n"];
+	}
+	
+	{
+    	for (NSString *filePath in fileList) {
+			if (filePath.length == 0) {
+				continue;
+			}
+        	// file reference
+        	NSString *fileName = [filePath lastPathComponent];
+        	id<PBXFileReference> destFileRef = (id<PBXFileReference>)[destGroup itemNamed:fileName];
+        	if (destFileRef == nil) {
+            	destFileRef = [[(id<PBXFileReference>)NSClassFromString(@"PBXFileReference") class] alloc];
+            	destFileRef = [destFileRef initWithName:fileName path:filePath sourceTree:sourceTree];
+            	[destGroup addItem:destFileRef];
+        	} else {
+        		[destFileRef setName:fileName];
+        		[destFileRef setPath:filePath andSourceTree:sourceTree];
+        	}
+    	}
 	}
 	
 	return [self writeProject];
 }
 
 - (NSNumber *) addCopyFile:(NSArray *)arguments
+{
+	return [self addCopyFile:arguments isBatch:NO];
+}
+
+- (NSNumber *) addCopyFile:(NSArray *)arguments isBatch:(BOOL)isBatch
 {
 	if ([arguments count] != 2)
 		[self printUsage:EX_USAGE];
@@ -622,6 +652,7 @@ static void WorkaroundRadar18512876(void)
 		// find out `Copy Files` build phase
 		id<PBXCopyFilesBuildPhase> copyPhase = nil;
 		NSArray *copyBuildPhases = [_target copyFilesBuildPhases];
+		copyBuildPhases = [copyBuildPhases arrayByAddingObject:[_target defaultResourceBuildPhase]];
 		for (id<PBXCopyFilesBuildPhase> phase in copyBuildPhases) {
 			NSString *buildPhaseName = [phase name];
 			if ([buildPhaseName isEqualToString:phaseName]) {
@@ -632,25 +663,50 @@ static void WorkaroundRadar18512876(void)
 		if (copyPhase == nil) {
     		@throw [NSException exceptionWithName:@"FAILED" reason:[NSString stringWithFormat:@"Build phase [%@] not found.", phaseName] userInfo:nil];
 		}
-		// find out file reference by file_path
-		id<PBXFileReference> fileRef = [self fileReferenceByPath:filePath];
 		
-		if (fileRef) {
-			NSArray *buildFiles = [[copyPhase buildFiles] copy];
-			for (id<PBXBuildFile> buildFile in buildFiles) {
-				if ([buildFile fileReference] == fileRef) {
-					// contains some reference, remove it
-					[copyPhase removeBuildFile:buildFile];
+		NSArray *fileList = @[filePath];
+		if (isBatch) {
+        	fileList = [[NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:nil] componentsSeparatedByString:@"\n"];
+		}
+		
+		{
+			for (NSString *filePath in fileList) {
+				if (filePath.length == 0) {
+					continue;
 				}
+				
+        		// find out file reference by file_path
+        		id<PBXFileReference> fileRef = (id<PBXFileReference>)[self fileReferenceByPath:filePath];
+        		
+        		if (fileRef && [NSStringFromClass([fileRef class]) isEqualToString:@"PBXFileReference"]) {
+        			NSArray *buildFiles = [[copyPhase buildFiles] copy];
+        			for (id<PBXBuildFile> buildFile in buildFiles) {
+        				if ([buildFile fileReference] == fileRef) {
+        					// contains some reference, remove it
+        					[copyPhase removeBuildFile:buildFile];
+        				}
+        			}
+        			[copyPhase addReference:fileRef];
+        			projectChanged = YES;
+        		} else {
+            		@throw [NSException exceptionWithName:@"FAILED" reason:[NSString stringWithFormat:@"Project file [%@] not found.", filePath] userInfo:nil];
+        		}
+				
 			}
-			[copyPhase addReference:fileRef];
-			projectChanged = YES;
-		} else {
-    		@throw [NSException exceptionWithName:@"FAILED" reason:[NSString stringWithFormat:@"Project file [%@] not found.", filePath] userInfo:nil];
 		}
 	}
 	
 	return projectChanged?[self writeProject]:@(EX_OK);
+}
+
+- (NSNumber *) batchAddReferences:(NSArray *)arguments
+{
+	return [self addFileReference:arguments isBatch:YES];
+}
+
+- (NSNumber *) batchAddCopyFiles:(NSArray *)arguments
+{
+	return [self addCopyFile:arguments isBatch:YES];
 }
 
 - (NSNumber *) addLinkLibrary:(NSArray *)arguments
@@ -668,9 +724,9 @@ static void WorkaroundRadar18512876(void)
 			@throw [NSException exceptionWithName:@"FAILED" reason:[NSString stringWithFormat:@"Build phase [%@] not found.", [(id<PBXFrameworksBuildPhase>)(NSClassFromString(@"PBXFrameworksBuildPhase")) defaultName]] userInfo:nil];
 		}
 		// find out file reference by file_path
-		id<PBXFileReference> fileRef = [self fileReferenceByPath:filePath];
+		id<PBXFileReference> fileRef = (id<PBXFileReference>)[self fileReferenceByPath:filePath];
 		
-		if (fileRef) {
+		if (fileRef && [NSStringFromClass([fileRef class]) isEqualToString:@"PBXFileReference"]) {
 			NSArray *buildFiles = [[frameworkPhase buildFiles] copy];
 			for (id<PBXBuildFile> buildFile in buildFiles) {
 				if ([buildFile fileReference] == fileRef) {
@@ -716,13 +772,11 @@ static void WorkaroundRadar18512876(void)
 		[self printUsage:EX_USAGE];
 	
 	BOOL projectChanged = NO;
-	if (_target) {
-		NSString *filePath = arguments[0];
-		id<PBXFileReference> fileRef = [self fileReferenceByPath:filePath];
-		if (fileRef) {
-			[fileRef deleteFromProject];
-    		projectChanged = YES;
-		}
+	NSString *filePath = arguments[0];
+	id<PBXFileReference> fileRef = (id<PBXFileReference>)[self fileReferenceByPath:filePath];
+	if (fileRef) {
+		[fileRef deleteFromProject];
+		projectChanged = YES;
 	}
 	
 	return projectChanged?[self writeProject]:@(EX_OK);
@@ -944,7 +998,7 @@ static void WorkaroundRadar18512876(void)
 	return [buildPhase addReference:fileReference];
 }
 
-- (id<PBXFileReference>)fileReferenceByPath:(NSString *)filePath
+- (id<PBXReference>)fileReferenceByPath:(NSString *)filePath
 {
 	id<PBXFileReference> fileRef = nil;
 	id<PBXGroup> groupRef = [_project rootGroup];
@@ -957,6 +1011,7 @@ static void WorkaroundRadar18512876(void)
 		id<PBXReference> currentGroup = [groupRef itemNamed:pathName];
 		[pathComponents removeObjectAtIndex:0];
 		if (currentGroup == nil) {
+			groupRef = nil;
 			break;
 		}
 		if ([currentGroup isKindOfClass:NSClassFromString(@"PBXFileReference")]) {
@@ -964,6 +1019,10 @@ static void WorkaroundRadar18512876(void)
 		} else {
 			groupRef = (id<PBXGroup>)currentGroup;
 		}
+	}
+	
+	if (fileRef == nil) {
+		return groupRef;
 	}
 	
 	return fileRef;
