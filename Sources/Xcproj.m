@@ -367,6 +367,7 @@ static void WorkaroundRadar18512876(void)
 {
 	return @[ @"list-targets",
 	          @"list-headers",
+	          @"list-group-items",
 	          @"read-build-setting",
 	          @"write-build-setting",
 	          @"add-dependency-target",
@@ -395,6 +396,8 @@ static void WorkaroundRadar18512876(void)
 	         @"     List all the targets in the project\n\n"
 	         @" * list-headers [All|Public|Project|Private] (default=Public)\n"
 	         @"     List headers from the `Copy Headers` build phase\n\n"
+	         @" * list-group-items <group_path>\n"
+	         @"     List subitems of <group_path> like /Frameworks\n\n"
 	         @" * read-build-setting <build_setting>\n"
 	         @"     Evaluate a build setting and print its value. If the build setting does not exist, nothing is printed\n\n"
 	         @" * write-build-setting <build_setting> <value>\n"
@@ -452,6 +455,40 @@ static void WorkaroundRadar18512876(void)
 		NSArray *attributes = [buildFile attributes];
 		if ([attributes containsObject:headerRole] || [headerRole isEqualToString:@"All"])
 			ddprintf(@"%@\n", [buildFile absolutePath]);
+	}
+	
+	return @(EX_OK);
+}
+
+- (NSNumber *) listGroupItems:(NSArray *)arguments
+{
+	if ([arguments count] > 1)
+		[self printUsage:EX_USAGE];
+	
+	NSString *groupPath = arguments[0];
+	
+	id<PBXGroup> groupRef = [_project rootGroup];
+	NSMutableArray *pathComponents = [NSMutableArray arrayWithArray:[groupPath pathComponents]];
+	if ([pathComponents[0] isEqualToString:@"/"]) {
+		[pathComponents removeObjectAtIndex:0];
+	}
+	while (pathComponents.count > 0) {
+		NSString *pathName = pathComponents[0];
+		id<PBXReference> currentGroup = [groupRef itemNamed:pathName];
+		[pathComponents removeObjectAtIndex:0];
+		if (currentGroup == nil) {
+			break;
+		}
+		if ([currentGroup isKindOfClass:NSClassFromString(@"PBXFileReference")]) {
+			ddprintf(@"%@\n", [currentGroup name]);
+			groupRef = nil;
+		} else {
+			groupRef = (id<PBXGroup>)currentGroup;
+		}
+	}
+	
+	for (id<PBXFileReference> subitem in [groupRef children]) {
+		ddprintf(@"%@\n", [subitem name]);
 	}
 	
 	return @(EX_OK);
