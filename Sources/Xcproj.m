@@ -66,7 +66,8 @@ static NSBundle * XcodeBundle(void)
 			{
 				NSData *outputData = [[task.standardOutput fileHandleForReading] readDataToEndOfFile];
 				NSString *outputString = [[NSString alloc] initWithData:outputData encoding:NSUTF8StringEncoding];
-				NSString *xcodePath = [[outputString stringByDeletingLastPathComponent] stringByDeletingLastPathComponent];
+				NSArray *outputComponents = [outputString componentsSeparatedByString:@"/"];
+				NSString *xcodePath = [[outputComponents subarrayWithRange:(NSRange){0, 3}] componentsJoinedByString:@"/"];
 				xcodeBundle = XcodeBundleAtPath(xcodePath);
 			}
 		}
@@ -652,7 +653,9 @@ static void WorkaroundRadar18512876(void)
 		// find out `Copy Files` build phase
 		id<PBXCopyFilesBuildPhase> copyPhase = nil;
 		NSArray *copyBuildPhases = [_target copyFilesBuildPhases];
-		copyBuildPhases = [copyBuildPhases arrayByAddingObject:[_target defaultResourceBuildPhase]];
+		if ([_target defaultResourceBuildPhase]) {
+    		copyBuildPhases = [copyBuildPhases arrayByAddingObject:[_target defaultResourceBuildPhase]];
+		}
 		for (id<PBXCopyFilesBuildPhase> phase in copyBuildPhases) {
 			NSString *buildPhaseName = [phase name];
 			if ([buildPhaseName isEqualToString:phaseName]) {
