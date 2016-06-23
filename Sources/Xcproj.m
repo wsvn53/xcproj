@@ -67,7 +67,17 @@ static NSBundle * XcodeBundle(void)
 				NSData *outputData = [[task.standardOutput fileHandleForReading] readDataToEndOfFile];
 				NSString *outputString = [[NSString alloc] initWithData:outputData encoding:NSUTF8StringEncoding];
 				NSArray *outputComponents = [outputString componentsSeparatedByString:@"/"];
-				NSString *xcodePath = [[outputComponents subarrayWithRange:(NSRange){0, 3}] componentsJoinedByString:@"/"];
+				NSString *xcodePath = @"";
+				for (NSString *compStr in outputComponents) {
+					if (compStr.length == 0) {
+						continue;
+					}
+					
+					xcodePath = [xcodePath stringByAppendingFormat:@"/%@", compStr];
+					if ([[compStr lowercaseString] hasPrefix:@"xcode"] && [compStr hasSuffix:@".app"]) {
+						break;
+					}
+				}
 				xcodeBundle = XcodeBundleAtPath(xcodePath);
 			}
 		}
@@ -108,7 +118,8 @@ static void LoadXcodeFrameworks(NSBundle *xcodeBundle)
 		// Xcode 6 requires DVTFoundation, DVTSourceControl, IDEFoundation and Xcode3Core
 		// Xcode 7 requires DVTFoundation, DVTSourceControl, IBFoundation, IBAutolayoutFoundation, IDEFoundation and Xcode3Core
 		// Xcode 7.3 requires DVTFoundation, DVTSourceControl, DVTServices, DVTPortal, IBFoundation, IBAutolayoutFoundation, IDEFoundation and Xcode3Core
-		frameworks = @[ @"DVTFoundation.framework", @"DVTSourceControl.framework", @"DVTServices.framework", @"DVTPortal.framework", @"CSServiceClient.framework", @"IBFoundation.framework", @"IBAutolayoutFoundation.framework", @"IDEFoundation.framework", @"Xcode3Core.ideplugin" ];
+		// Xcode 8 requires DVTDocumentation, DVTAnalyticsClient, DVTAnalyticsc, SourceKit
+		frameworks = @[ @"DVTDocumentation.framework", @"DVTFoundation.framework", @"DVTSourceControl.framework", @"DVTServices.framework", @"DVTPortal.framework", @"DVTAnalyticsClient.framework", @"DVTAnalytics.framework", @"SourceKit.framework",  @"CSServiceClient.framework", @"IBFoundation.framework", @"IBAutolayoutFoundation.framework", @"IDEFoundation.framework", @"Xcode3Core.ideplugin" ];
 	}
 	
 	for (NSString *framework in frameworks)
