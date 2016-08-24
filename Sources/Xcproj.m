@@ -118,8 +118,8 @@ static void LoadXcodeFrameworks(NSBundle *xcodeBundle)
 		// Xcode 6 requires DVTFoundation, DVTSourceControl, IDEFoundation and Xcode3Core
 		// Xcode 7 requires DVTFoundation, DVTSourceControl, IBFoundation, IBAutolayoutFoundation, IDEFoundation and Xcode3Core
 		// Xcode 7.3 requires DVTFoundation, DVTSourceControl, DVTServices, DVTPortal, IBFoundation, IBAutolayoutFoundation, IDEFoundation and Xcode3Core
-		// Xcode 8 requires DVTDocumentation, DVTAnalyticsClient, DVTAnalyticsc, SourceKit
-		frameworks = @[ @"DVTDocumentation.framework", @"DVTFoundation.framework", @"DVTSourceControl.framework", @"DVTServices.framework", @"DVTPortal.framework", @"DVTAnalyticsClient.framework", @"DVTAnalytics.framework", @"SourceKit.framework",  @"CSServiceClient.framework", @"IBFoundation.framework", @"IBAutolayoutFoundation.framework", @"IDEFoundation.framework", @"Xcode3Core.ideplugin" ];
+		// Xcode 8 requires DVTAnalyticsClient, DVTAnalyticsc, SourceKit
+		frameworks = @[ @"DVTFoundation.framework", @"DVTSourceControl.framework", @"DVTServices.framework", @"DVTPortal.framework", @"DVTAnalyticsClient.framework", @"DVTAnalytics.framework", @"SourceKit.framework",  @"CSServiceClient.framework", @"IBFoundation.framework", @"IBAutolayoutFoundation.framework", @"IDEFoundation.framework", @"Xcode3Core.ideplugin" ];
 	}
 	
 	for (NSString *framework in frameworks)
